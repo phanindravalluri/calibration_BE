@@ -1,0 +1,99 @@
+# -------------------------
+# Node.js Essentials
+# -------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+.pnpm-store/
+
+# dependency directories
+jspm_packages/
+bower_components/
+
+# -------------------------
+# Environment Files
+# -------------------------
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.production.local
+.env.test.local
+
+# security
+*.pem
+*.key
+*.crt
+*.p12
+
+# -------------------------
+# Logs & Diagnostics
+# -------------------------
+logs/
+*.log
+*.stackdump
+*.pid
+*.seed
+*.pid.lock
+
+# -------------------------
+# Runtime Output
+# -------------------------
+dist/
+build/
+tmp/
+temp/
+.cache/
+.cache-loader/
+coverage/
+
+# TypeScript build output
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# -------------------------
+# OS / System files
+# -------------------------
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Icon?
+.Spotlight-V100
+.Trashes
+
+# -------------------------
+# Editors
+# -------------------------
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# -------------------------
+# Optional – Express static uploads
+# If your API stores uploaded files, don't commit them
+# -------------------------
+uploads/
+public/uploads/
+static/uploads/
+
+# -------------------------
+# Optional – Next.js
+# -------------------------
+.next/
+out/
+
+# -------------------------
+# Optional – React
+# -------------------------
+/coverage
+/.eslintcache
+
+# -------------------------
+# Optional – PM2 logs
+# -------------------------
+.pm2/logs/
+.pm2/pids/
