@@ -76,7 +76,6 @@ Icon?
 # Optional – Express static uploads
 # If your API stores uploaded files, don't commit them
 # -------------------------
-uploads/
 public/uploads/
 static/uploads/
 
