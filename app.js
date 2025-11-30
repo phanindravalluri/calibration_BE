@@ -76,7 +76,7 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 // ---------- Route mounting: keep auth public, protect users/products ----------
 app.use("/auth", authRoutes); // signup, login, me — public endpoints in auth.js handle cookies
 app.use("/users", requireAuth, userRoutes); // admin-only create user route inside users.js also checks role
-app.use("/products", requireAuth, productRoutes); // create product protected; you might allow GET product routes to be public inside file
+app.use("/products", productRoutes); // create product protected; you might allow GET product routes to be public inside file
 
 /* --------------- Swagger config (OpenAPI 3 + cookieAuth) --------------- */
 const swaggerDefinition = {
