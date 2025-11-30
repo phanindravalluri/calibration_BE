@@ -27,6 +27,9 @@ const allowedOrigins = (process.env.FRONTEND_ORIGINS || "")
   .map((o) => o.trim())
   .filter(Boolean);
 
+// serve uploaded files statically (optional)
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 app.use(express.json());
 app.use(cookieParser());
 
@@ -69,9 +72,6 @@ function requireAuth(req, res, next) {
 app.get("/protected", requireAuth, (req, res) => {
   res.json({ message: `Hello ${req.user.username}`, user: req.user });
 });
-
-// serve uploaded files statically (optional)
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // ---------- Route mounting: keep auth public, protect users/products ----------
 app.use("/auth", authRoutes); // signup, login, me — public endpoints in auth.js handle cookies
