@@ -12,6 +12,8 @@ const path = require("path");
 const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/users");
 const productRoutes = require("./routes/products");
+const calibrationRoutes = require("./routes/calibrations");
+const ensureDefaultCompany = require("./seed/defaultCompany");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -77,6 +79,7 @@ app.get("/protected", requireAuth, (req, res) => {
 app.use("/auth", authRoutes); // signup, login, me — public endpoints in auth.js handle cookies
 app.use("/users", requireAuth, userRoutes); // admin-only create user route inside users.js also checks role
 app.use("/products", productRoutes); // create product protected; you might allow GET product routes to be public inside file
+app.use("/calibrations", requireAuth, calibrationRoutes); // all routes protected
 
 /* --------------- Swagger config (OpenAPI 3 + cookieAuth) --------------- */
 const swaggerDefinition = {
@@ -137,6 +140,9 @@ async function startServer() {
       useUnifiedTopology: true,
     });
     console.log("MongoDB connected");
+
+    // ensure default company exists
+    await ensureDefaultCompany();
 
     app.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`);

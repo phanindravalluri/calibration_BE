@@ -1,8 +1,8 @@
 // routes/users.js
-const express = require('express');
-const bcrypt = require('bcryptjs');
-const User = require('../models/User');
-const { requireRole } = require('../middleware/auth');
+const express = require("express");
+const bcrypt = require("bcryptjs");
+const User = require("../models/User");
+const { requireRole } = require("../middleware/auth");
 
 const router = express.Router();
 
@@ -10,25 +10,40 @@ const router = express.Router();
  * POST /users
  * Admin-only: create user with role
  */
-router.post('/', requireRole('admin'), async (req, res) => {
+router.post("/", requireRole("admin"), async (req, res) => {
   try {
     const { email, username, password, role, mobile } = req.body;
-    if (!email || !username || !password) return res.status(400).json({ error: 'Missing fields' });
+    if (!email || !username || !password)
+      return res.status(400).json({ error: "Missing fields" });
 
     const exists = await User.findOne({ email });
-    if (exists) return res.status(400).json({ error: 'Email already exists' });
+    if (exists) return res.status(400).json({ error: "Email already exists" });
 
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
-    const user = new User({ email, username, passwordHash, role: role || 'user', mobile });
+    const user = new User({
+      email,
+      username,
+      passwordHash,
+      role: role || "user",
+      mobile,
+      company: req.user.companyId,
+    });
     await user.save();
 
-    const userSafe = { id: user._id, email: user.email, username: user.username, role: user.role, mobile: user.mobile };
+    const userSafe = {
+      id: user._id,
+      email: user.email,
+      username: user.username,
+      role: user.role,
+      mobile: user.mobile,
+      companyId: user.company,
+    };
     return res.status(201).json({ user: userSafe });
   } catch (err) {
-    console.error('create user err', err);
-    return res.status(500).json({ error: 'Server error' });
+    console.error("create user err", err);
+    return res.status(500).json({ error: "Server error" });
   }
 });
 
@@ -40,22 +55,24 @@ router.post('/', requireRole('admin'), async (req, res) => {
  *   - limit
  *   - q (search by email or username)
  */
-router.get('/', requireRole('admin'), async (req, res) => {
+router.get("/", requireRole("admin"), async (req, res) => {
   try {
     const page = Math.max(1, Number(req.query.page || 1));
     const limit = Math.min(100, Number(req.query.limit || 20));
-    const q = (req.query.q || '').trim();
+    const q = (req.query.q || "").trim();
 
-    const filter = {};
+    const filter = {
+      company: req.user.companyId,
+    };
     if (q) {
       // case-insensitive partial match on email or username or mobile
-      const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
       filter.$or = [{ email: re }, { username: re }, { mobile: re }];
     }
 
     const total = await User.countDocuments(filter);
     const users = await User.find(filter)
-      .select('-passwordHash')
+      .select("-passwordHash")
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit)
@@ -63,11 +80,19 @@ router.get('/', requireRole('admin'), async (req, res) => {
 
     return res.json({
       meta: { total, page, limit, pages: Math.ceil(total / limit) },
-      users: users.map(u => ({ id: u._id, email: u.email, username: u.username, mobile: u.mobile, role: u.role, createdAt: u.createdAt }))
+      users: users.map((u) => ({
+        id: u._id,
+        email: u.email,
+        username: u.username,
+        mobile: u.mobile,
+        role: u.role,
+        companyId: u.company,
+        createdAt: u.createdAt,
+      })),
     });
   } catch (err) {
-    console.error('list users err', err);
-    return res.status(500).json({ error: 'Server error' });
+    console.error("list users err", err);
+    return res.status(500).json({ error: "Server error" });
   }
 });
 
@@ -75,14 +100,29 @@ router.get('/', requireRole('admin'), async (req, res) => {
  * GET /users/:id
  * Admin-only: get single user
  */
-router.get('/:id', requireRole('admin'), async (req, res) => {
+router.get("/:id", requireRole("admin"), async (req, res) => {
   try {
-    const u = await User.findById(req.params.id).select('-passwordHash').lean();
-    if (!u) return res.status(404).json({ error: 'Not found' });
-    return res.json({ user: { id: u._id, email: u.email, username: u.username, mobile: u.mobile, role: u.role, createdAt: u.createdAt } });
+    const u = await User.findOne({
+      _id: req.params.id,
+      company: req.user.companyId,
+    })
+      .select("-passwordHash")
+      .lean();
+    if (!u) return res.status(404).json({ error: "Not found" });
+    return res.json({
+      user: {
+        id: u._id,
+        email: u.email,
+        username: u.username,
+        mobile: u.mobile,
+        role: u.role,
+        companyId: u.company,
+        createdAt: u.createdAt,
+      },
+    });
   } catch (err) {
-    console.error('get user err', err);
-    return res.status(500).json({ error: 'Server error' });
+    console.error("get user err", err);
+    return res.status(500).json({ error: "Server error" });
   }
 });
 
@@ -90,7 +130,7 @@ router.get('/:id', requireRole('admin'), async (req, res) => {
  * PUT /users/:id
  * Admin-only: update user fields (email, username, mobile, role, optional password)
  */
-router.put('/:id', requireRole('admin'), async (req, res) => {
+router.put("/:id", requireRole("admin"), async (req, res) => {
   try {
     const { email, username, mobile, role, password } = req.body;
     const update = {};
@@ -105,13 +145,29 @@ router.put('/:id', requireRole('admin'), async (req, res) => {
       update.passwordHash = await bcrypt.hash(password, salt);
     }
 
-    const updated = await User.findByIdAndUpdate(req.params.id, update, { new: true }).select('-passwordHash').lean();
-    if (!updated) return res.status(404).json({ error: 'Not found' });
+    const updated = await User.findOneAndUpdate(
+      { _id: req.params.id, company: req.user.companyId },
+      update,
+      { new: true }
+    )
+      .select("-passwordHash")
+      .lean();
+    if (!updated) return res.status(404).json({ error: "Not found" });
 
-    return res.json({ user: { id: updated._id, email: updated.email, username: updated.username, mobile: updated.mobile, role: updated.role, createdAt: updated.createdAt } });
+    return res.json({
+      user: {
+        id: updated._id,
+        email: updated.email,
+        username: updated.username,
+        mobile: updated.mobile,
+        role: updated.role,
+        companyId: updated.company,
+        createdAt: updated.createdAt,
+      },
+    });
   } catch (err) {
-    console.error('update user err', err);
-    return res.status(500).json({ error: 'Server error' });
+    console.error("update user err", err);
+    return res.status(500).json({ error: "Server error" });
   }
 });
 
@@ -119,14 +175,17 @@ router.put('/:id', requireRole('admin'), async (req, res) => {
  * DELETE /users/:id
  * Admin-only: remove a user
  */
-router.delete('/:id', requireRole('admin'), async (req, res) => {
+router.delete("/:id", requireRole("admin"), async (req, res) => {
   try {
-    const removed = await User.findByIdAndDelete(req.params.id).lean();
-    if (!removed) return res.status(404).json({ error: 'Not found' });
+    const removed = await User.findOneAndDelete({
+      _id: req.params.id,
+      company: req.user.companyId,
+    });
+    if (!removed) return res.status(404).json({ error: "Not found" });
     return res.json({ ok: true });
   } catch (err) {
-    console.error('delete user err', err);
-    return res.status(500).json({ error: 'Server error' });
+    console.error("delete user err", err);
+    return res.status(500).json({ error: "Server error" });
   }
 });
 
